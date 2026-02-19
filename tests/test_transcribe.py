@@ -154,5 +154,32 @@ class TestSummarizer(unittest.TestCase):
         handle = mock_file()
         handle.write.assert_called_with("# Summary\n\n- Point 1")
 
+    @patch("subprocess.run")
+    @patch("shutil.which")
+    @patch("builtins.open", new_callable=mock_open, read_data="Transcript text")
+    def test_summarize_gemini_success(self, mock_file, mock_which, mock_subprocess):
+        # Setup
+        summarizer = Summarizer("http://unused", "gemini")
+        mock_which.return_value = "/usr/bin/gemini"
+        
+        mock_process = MagicMock()
+        mock_process.stdout = "# Gemini Summary"
+        mock_process.returncode = 0
+        mock_subprocess.return_value = mock_process
+        
+        # Execute
+        summarizer.summarize(Path("transcript.txt"), Path("summary.md"))
+        
+        # Verify
+        mock_which.assert_called_with("gemini")
+        mock_subprocess.assert_called_once()
+        args, kwargs = mock_subprocess.call_args
+        self.assertEqual(args[0], ["gemini", "-p", transcribe.SYSTEM_PROMPT])
+        self.assertEqual(kwargs['input'], "Transcript text")
+        
+        # Verify write
+        handle = mock_file()
+        handle.write.assert_called_with("# Gemini Summary")
+
 if __name__ == "__main__":
     unittest.main()

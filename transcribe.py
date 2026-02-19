@@ -199,12 +199,46 @@ class Summarizer:
         self.model = model
 
     def summarize(self, transcript_path: Path, output_path: Path):
-        """Generate summary from transcript using Ollama."""
+        """Generate summary from transcript using Ollama or Gemini CLI."""
         logging.info(f"Summarizing {transcript_path.name} using {self.model}...")
         
         with open(transcript_path, "r", encoding="utf-8") as f:
             transcript_text = f.read()
 
+        if self.model.lower() == "gemini":
+            self._summarize_gemini(transcript_text, output_path)
+        else:
+            self._summarize_ollama(transcript_text, output_path)
+
+    def _summarize_gemini(self, transcript_text: str, output_path: Path):
+        """Summarize using the Gemini CLI tool."""
+        if not shutil.which("gemini"):
+             raise FileNotFoundError("The 'gemini' CLI tool is required but not found in PATH.")
+
+        cmd = ["gemini", "-p", SYSTEM_PROMPT]
+        
+        try:
+            # Run gemini command, piping transcript to stdin
+            process = subprocess.run(
+                cmd,
+                input=transcript_text,
+                text=True,
+                capture_output=True,
+                check=True
+            )
+            
+            # Write stdout to output file
+            with open(output_path, "w", encoding="utf-8") as f:
+                f.write(process.stdout)
+                
+            logging.info(f"Summary saved to {output_path.name}")
+            
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Gemini CLI failed: {e.stderr}")
+            raise RuntimeError(f"Gemini CLI failed with return code {e.returncode}") from e
+
+    def _summarize_ollama(self, transcript_text: str, output_path: Path):
+        """Summarize using the Ollama API."""
         prompt = f"""{SYSTEM_PROMPT}
 
 Transcript:

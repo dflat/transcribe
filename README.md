@@ -78,3 +78,10 @@ The script looks for `transcribe_config.json` in the current directory.
     "downloader_args": { ... }
 }
 ```
+
+### Gemini CLI Support
+
+To use the Google Gemini CLI instead of a local Ollama server for summarization:
+1.  Ensure the `gemini` command-line tool is installed and in your PATH.
+2.  Set `"summarize_model": "gemini"` in your `transcribe_config.json`.
+    *   The script will pipe the transcript to `gemini -p <SYSTEM_PROMPT>`.
