@@ -56,9 +56,10 @@ Follow these strict guidelines:
 
 # --- Utilities ---
 
-def setup_logging():
+def setup_logging(verbose: bool = False):
+    level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(
-        level=logging.INFO,
+        level=level,
         format="%(asctime)s [%(levelname)s] %(message)s",
         datefmt="%H:%M:%S"
     )
@@ -73,12 +74,11 @@ def load_config() -> Dict[str, Any]:
             with open(config_path, "r", encoding="utf-8") as f:
                 user_config = json.load(f)
                 config.update(user_config)
-            logging.info(f"Loaded configuration from {config_path}")
+            # Logging might not be setup yet, so defer logging until setup_logging
         except json.JSONDecodeError as e:
-            logging.warning(f"Failed to parse config file: {e}. Using defaults.")
-    else:
-        logging.info("Config file not found. Using default settings.")
-        
+            # We will log this later if possible or just print
+            print(f"Warning: Failed to parse config file: {e}. Using defaults.")
+    
     return config
 
 def notify(title: str, message: str):
@@ -236,14 +236,25 @@ Transcript:
 
 def main():
     try:
-        setup_logging()
-        check_dependencies()
-        config = load_config()
-
         parser = argparse.ArgumentParser(description="Download, Transcribe, and Summarize Audio.")
         parser.add_argument("input", help="URL to download or path to local audio file.")
         parser.add_argument("--no-summary", action="store_true", help="Skip summary generation.")
+        parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging and download progress.")
         args = parser.parse_args()
+
+        setup_logging(args.verbose)
+        check_dependencies()
+        config = load_config()
+
+        if args.verbose:
+            logging.debug("Verbose mode enabled.")
+            # Enable verbose downloader output
+            if "downloader_args" in config:
+                config["downloader_args"]["quiet"] = False
+                config["downloader_args"]["no_warnings"] = False
+                config["downloader_args"]["verbose"] = True # Force yt-dlp verbose
+        
+        logging.info(f"Loaded configuration.")
 
         input_arg = args.input
         work_dir = Path.cwd()

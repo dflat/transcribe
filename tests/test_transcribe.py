@@ -24,6 +24,15 @@ class TestConfiguration(unittest.TestCase):
         config = load_config()
         self.assertEqual(config, DEFAULT_CONFIG)
 
+    def test_setup_logging_verbose(self):
+        with patch("logging.basicConfig") as mock_logging:
+            transcribe.setup_logging(verbose=True)
+            mock_logging.assert_called_with(
+                level=transcribe.logging.DEBUG,
+                format="%(asctime)s [%(levelname)s] %(message)s",
+                datefmt="%H:%M:%S"
+            )
+
 class TestDownloader(unittest.TestCase):
     def setUp(self):
         self.config = DEFAULT_CONFIG.copy()
