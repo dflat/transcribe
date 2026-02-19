@@ -16,8 +16,12 @@ This directory contains `transcribe.py`, a unified Python script that handles th
     *   *Windows:* Download from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/) and add `bin` folder to PATH.
     *   *Linux:* `sudo apt install ffmpeg`
     *   *macOS:* `brew install ffmpeg`
-3.  **Python Packages:**
+3.  **Python Environment:**
+    It is recommended to use a virtual environment:
     ```bash
+    python3 -m venv .venv
+    source .venv/bin/activate  # On Linux/macOS
+    # .venv\Scripts\activate   # On Windows
     pip install -r requirements.txt
     ```
 
@@ -29,6 +33,10 @@ This directory contains `transcribe.py`, a unified Python script that handles th
 python transcribe.py [URL | FILE]
 ```
 
+### Output
+
+By default, all processed files (audio, transcript, and summary) are stored in a subdirectory of the `output/` folder, named after the input file (slugified). You can change this base directory in `transcribe_config.json`.
+
 ### Options
 
 *   `--no-summary`: Skip the summarization step (transcription only).
@@ -39,8 +47,8 @@ python transcribe.py [URL | FILE]
 ```bash
 python transcribe.py https://www.youtube.com/watch?v=dQw4w9WgXcQ
 ```
-*   Downloads the audio to a temporary folder.
-*   Creates a workspace directory (e.g., `rick-roll`).
+*   Downloads the audio.
+*   Creates a workspace directory in `output/` (e.g., `output/rick-roll/`).
 *   Moves the audio there.
 *   Converts and transcribes via local Whisper server.
 *   Summarizes via local Ollama server.
@@ -49,7 +57,7 @@ python transcribe.py https://www.youtube.com/watch?v=dQw4w9WgXcQ
 ```bash
 python transcribe.py meeting.m4a
 ```
-*   Moves `meeting.m4a` to a new directory `meeting`.
+*   Moves `meeting.m4a` to `output/meeting/`.
 *   Transcribes and summarizes.
 
 **3. Transcription Only:**
@@ -66,6 +74,7 @@ The script looks for `transcribe_config.json` in the current directory.
     "whisper_url": "http://192.168.1.212:8080/inference",
     "ollama_url": "http://192.168.1.212:11434/api/generate",
     "summarize_model": "qwen2.5",
+    "output_directory": "output/",
     "downloader_args": { ... }
 }
 ```

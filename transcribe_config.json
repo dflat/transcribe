@@ -2,13 +2,16 @@
   "whisper_url": "http://192.168.1.212:8080/inference",
   "ollama_url": "http://192.168.1.212:11434/api/generate",
   "summarize_model": "qwen2.5",
+  "output_directory": "output/",
   "downloader_args": {
     "format": "bestaudio/best",
-    "postprocessors": [{
-      "key": "FFmpegExtractAudio",
-      "preferredcodec": "mp3",
-      "preferredquality": "192"
-    }],
+    "postprocessors": [
+      {
+        "key": "FFmpegExtractAudio",
+        "preferredcodec": "mp3",
+        "preferredquality": "192"
+      }
+    ],
     "outtmpl": "%(title)s.%(ext)s",
     "quiet": true,
     "no_warnings": true

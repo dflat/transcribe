@@ -27,6 +27,7 @@ DEFAULT_CONFIG = {
     "whisper_url": "http://192.168.1.212:8080/inference",
     "ollama_url": "http://192.168.1.212:11434/api/generate",
     "summarize_model": "qwen2.5",
+    "output_directory": "output/",
     "downloader_args": {
         "format": "bestaudio/best",
         "postprocessors": [{
@@ -204,10 +205,10 @@ class Summarizer:
         with open(transcript_path, "r", encoding="utf-8") as f:
             transcript_text = f.read()
 
-        prompt = f"{SYSTEM_PROMPT}
+        prompt = f"""{SYSTEM_PROMPT}
 
 Transcript:
-{transcript_text}"
+{transcript_text}"""
         
         payload = {
             "model": self.model,
@@ -234,102 +235,111 @@ Transcript:
 # --- Main Logic ---
 
 def main():
-    setup_logging()
-    check_dependencies()
-    config = load_config()
-
-    parser = argparse.ArgumentParser(description="Download, Transcribe, and Summarize Audio.")
-    parser.add_argument("input", help="URL to download or path to local audio file.")
-    parser.add_argument("--no-summary", action="store_true", help="Skip summary generation.")
-    args = parser.parse_args()
-
-    input_arg = args.input
-    work_dir = Path.cwd()
-    
-    # Initialize Components
-    downloader = Downloader(config)
-    transcriber = Transcriber(config["whisper_url"])
-    summarizer = Summarizer(config["ollama_url"], config["summarize_model"])
-
-    # --- Step 1: Input Handling (Download or Local) ---
-    temp_download_dir = None
-    
-    if input_arg.startswith("http://") or input_arg.startswith("https://"):
-        try:
-            # Use a temporary directory for the initial download to keep things clean
-            temp_download_dir = Path(tempfile.mkdtemp())
-            audio_path = downloader.download(input_arg, temp_download_dir)
-            original_filename = audio_path.name
-        except Exception as e:
-            notify("Download Failed", str(e))
-            sys.exit(1)
-    else:
-        audio_path = Path(input_arg).resolve()
-        if not audio_path.exists():
-            logging.error(f"File not found: {audio_path}")
-            sys.exit(1)
-        original_filename = audio_path.name
-
-    # --- Step 2: Workspace Creation ---
-    # Create slug from filename (without extension)
-    slug_base = slugify(Path(original_filename).stem)
-    slug_dir = work_dir / slug_base
-    
-    if slug_dir.exists():
-        logging.warning(f"Directory '{slug_dir.name}' already exists. Merging/Overwriting.")
-    else:
-        slug_dir.mkdir()
-        logging.info(f"Created workspace: {slug_dir}")
-
-    # Move/Copy audio file to workspace
-    final_audio_path = slug_dir / original_filename
-    
-    # If downloaded, move it. If local, copy it (preserve original) or move? 
-    # The shell script logic implied moving input file to workspace. 
-    # Let's Move for consistency with pipeline.sh, unless it's a download from temp.
-    
-    if temp_download_dir:
-        shutil.move(str(audio_path), str(final_audio_path))
-        shutil.rmtree(temp_download_dir)
-    else:
-        # If local file is NOT already in the slug dir, move it there
-        if audio_path.parent != slug_dir:
-            shutil.move(str(audio_path), str(final_audio_path))
-        else:
-            final_audio_path = audio_path # Already there
-
-    # --- Step 3: Transcription ---
     try:
-        transcript_path, _ = transcriber.transcribe(final_audio_path)
-    except Exception as e:
-        logging.error(f"Transcription failed: {e}")
-        notify("Transcription Failed", str(e))
-        sys.exit(1)
+        setup_logging()
+        check_dependencies()
+        config = load_config()
 
-    # --- Step 4: Summarization ---
-    if not args.no_summary:
-        summary_path = slug_dir / f"{slug_base}_summary.md"
+        parser = argparse.ArgumentParser(description="Download, Transcribe, and Summarize Audio.")
+        parser.add_argument("input", help="URL to download or path to local audio file.")
+        parser.add_argument("--no-summary", action="store_true", help="Skip summary generation.")
+        args = parser.parse_args()
+
+        input_arg = args.input
+        work_dir = Path.cwd()
+        
+        # Initialize Components
+        downloader = Downloader(config)
+        transcriber = Transcriber(config["whisper_url"])
+        summarizer = Summarizer(config["ollama_url"], config["summarize_model"])
+
+        # --- Step 1: Input Handling (Download or Local) ---
+        temp_download_dir = None
+        
+        if input_arg.startswith("http://") or input_arg.startswith("https://"):
+            try:
+                # Use a temporary directory for the initial download to keep things clean
+                temp_download_dir = Path(tempfile.mkdtemp())
+                audio_path = downloader.download(input_arg, temp_download_dir)
+                original_filename = audio_path.name
+            except Exception as e:
+                logging.error(f"Download Failed: {e}")
+                notify("Download Failed", str(e))
+                sys.exit(1)
+        else:
+            audio_path = Path(input_arg).resolve()
+            if not audio_path.exists():
+                logging.error(f"File not found: {audio_path}")
+                sys.exit(1)
+            original_filename = audio_path.name
+
+        # --- Step 2: Workspace Creation ---
+        # Create slug from filename (without extension)
+        slug_base = slugify(Path(original_filename).stem)
+        output_base_dir = Path(config.get("output_directory", "output/"))
+        slug_dir = output_base_dir / slug_base
+        
+        if slug_dir.exists():
+            logging.warning(f"Directory '{slug_dir.name}' already exists. Merging/Overwriting.")
+        else:
+            slug_dir.mkdir(parents=True, exist_ok=True)
+            logging.info(f"Created workspace: {slug_dir}")
+
+        # Move/Copy audio file to workspace
+        final_audio_path = slug_dir / original_filename
+        
+        # If downloaded, move it. If local, copy it (preserve original) or move? 
+        # The shell script logic implied moving input file to workspace. 
+        # Let's Move for consistency with pipeline.sh, unless it's a download from temp.
+        
+        if temp_download_dir:
+            shutil.move(str(audio_path), str(final_audio_path))
+            shutil.rmtree(temp_download_dir)
+        else:
+            # If local file is NOT already in the slug dir, move it there
+            if audio_path.parent != slug_dir:
+                shutil.move(str(audio_path), str(final_audio_path))
+            else:
+                final_audio_path = audio_path # Already there
+
+        # --- Step 3: Transcription ---
         try:
-            summarizer.summarize(transcript_path, summary_path)
-            notify("Pipeline Complete", f"Processed {original_filename}")
+            transcript_path, _ = transcriber.transcribe(final_audio_path)
         except Exception as e:
-            logging.error(f"Summarization failed: {e}")
-            notify("Summarization Failed", str(e))
-            # Don't exit, we partially succeeded
-    else:
-        logging.info("Skipping summary generation.")
-        notify("Transcription Complete", f"Transcribed {original_filename}")
+            logging.error(f"Transcription failed: {e}")
+            notify("Transcription Failed", str(e))
+            sys.exit(1)
 
-    print("
-" + "="*40)
-    print("SUCCESS")
-    print("="*40)
-    print(f"Workspace: {slug_dir}")
-    print(f" - Audio:      {final_audio_path.name}")
-    print(f" - Transcript: {transcript_path.name}")
-    if not args.no_summary and 'summary_path' in locals():
-         print(f" - Summary:    {summary_path.name}")
-    print("="*40)
+        # --- Step 4: Summarization ---
+        if not args.no_summary:
+            summary_path = slug_dir / f"{slug_base}_summary.md"
+            try:
+                summarizer.summarize(transcript_path, summary_path)
+                notify("Pipeline Complete", f"Processed {original_filename}")
+            except Exception as e:
+                logging.error(f"Summarization failed: {e}")
+                notify("Summarization Failed", str(e))
+                # Don't exit, we partially succeeded
+        else:
+            logging.info("Skipping summary generation.")
+            notify("Transcription Complete", f"Transcribed {original_filename}")
+
+        print("\n" + "="*40)
+        print("SUCCESS")
+        print("="*40)
+        print(f"Workspace: {slug_dir}")
+        print(f" - Audio:      {final_audio_path.name}")
+        print(f" - Transcript: {transcript_path.name}")
+        if not args.no_summary and 'summary_path' in locals():
+             print(f" - Summary:    {summary_path.name}")
+        print("="*40)
+
+    except KeyboardInterrupt:
+        logging.info("Process interrupted by user.")
+        sys.exit(130)
+    except Exception as e:
+        logging.critical(f"An unexpected error occurred: {e}", exc_info=True)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
