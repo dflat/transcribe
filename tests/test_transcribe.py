@@ -176,6 +176,7 @@ class TestSummarizer(unittest.TestCase):
         args, kwargs = mock_subprocess.call_args
         self.assertEqual(args[0], ["gemini", "-p", transcribe.SYSTEM_PROMPT])
         self.assertEqual(kwargs['input'], "Transcript text")
+        self.assertEqual(kwargs['encoding'], "utf-8")
         
         # Verify write
         handle = mock_file()

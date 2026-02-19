@@ -223,6 +223,7 @@ class Summarizer:
                 cmd,
                 input=transcript_text,
                 text=True,
+                encoding="utf-8",
                 capture_output=True,
                 check=True
             )
