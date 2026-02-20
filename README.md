@@ -71,7 +71,10 @@ python transcribe.py --no-summary interview.wav
 
 ## Configuration (`transcribe_config.json`)
 
-The script looks for `transcribe_config.json` in the current directory.
+The script looks for `transcribe_config.json` in the following locations, in order:
+
+1.  The current directory (`./transcribe_config.json`)
+2.  The user's config directory (`~/.config/transcribe/transcribe_config.json` on Linux/macOS)
 
 ```json
 {

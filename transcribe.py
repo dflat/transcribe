@@ -65,19 +65,38 @@ def setup_logging(verbose: bool = False):
     )
 
 def load_config() -> Dict[str, Any]:
-    """Load configuration from JSON file or return defaults."""
-    config_path = Path(CONFIG_FILE_NAME)
+    """Load configuration from JSON file or return defaults.
+    
+    Checks in order:
+    1. Current working directory (transcribe_config.json)
+    2. User config directory (~/.config/transcribe/transcribe_config.json)
+    """
     config = DEFAULT_CONFIG.copy()
     
-    if config_path.exists():
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                user_config = json.load(f)
-                config.update(user_config)
-            # Logging might not be setup yet, so defer logging until setup_logging
-        except json.JSONDecodeError as e:
-            # We will log this later if possible or just print
-            print(f"Warning: Failed to parse config file: {e}. Using defaults.")
+    # Define search paths
+    search_paths = [
+        Path.cwd() / CONFIG_FILE_NAME,
+        Path.home() / ".config" / "transcribe" / CONFIG_FILE_NAME
+    ]
+    
+    config_loaded = False
+    for config_path in search_paths:
+        if config_path.exists():
+            try:
+                with open(config_path, "r", encoding="utf-8") as f:
+                    user_config = json.load(f)
+                    config.update(user_config)
+                # Logging might not be setup yet, so defer logging until setup_logging
+                # We can't easily log here without setting up logging first, but we can return the path found if needed
+                config_loaded = True
+                break # Stop after finding the first config file
+            except json.JSONDecodeError as e:
+                print(f"Warning: Failed to parse config file at {config_path}: {e}. Skipping.")
+
+    if not config_loaded:
+        # Optional: Print info that defaults are used if verbose? 
+        # But we don't have verbose flag parsed yet.
+        pass
     
     return config
 

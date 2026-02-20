@@ -24,6 +24,27 @@ class TestConfiguration(unittest.TestCase):
         config = load_config()
         self.assertEqual(config, DEFAULT_CONFIG)
 
+    @patch("builtins.open", new_callable=mock_open, read_data='{"output_directory": "fallback_output/"}')
+    @patch("pathlib.Path.exists")
+    def test_load_config_fallback(self, mock_exists, mock_file):
+        # First path (cwd) doesn't exist, second (home) does
+        # Note: Path.exists might be called more times depending on implementation details of Path
+        # So using side_effect with a list might be brittle if Path() constructor checks existence or something
+        # Better to check the path argument if possible, or assume the order of checks in load_config
+        
+        def side_effect(self):
+            if str(self) == str(Path.cwd() / transcribe.CONFIG_FILE_NAME):
+                return False
+            if str(self) == str(Path.home() / ".config" / "transcribe" / transcribe.CONFIG_FILE_NAME):
+                return True
+            return False
+            
+        # Using a simple side_effect list assumes exact call order and count
+        mock_exists.side_effect = [False, True] 
+        
+        config = load_config()
+        self.assertEqual(config["output_directory"], "fallback_output/")
+
     def test_setup_logging_verbose(self):
         with patch("logging.basicConfig") as mock_logging:
             transcribe.setup_logging(verbose=True)
