@@ -35,7 +35,7 @@ python transcribe.py [URL | FILE]
 
 ### Output
 
-By default, all processed files (audio, transcript, and summary) are stored in a subdirectory of the `output/` folder, named after the input file (slugified). You can change this base directory in `transcribe_config.json`.
+By default, all processed files (audio, transcript, and summary) are stored in a subdirectory of the `output/` folder, named after the input file (slugified). You can change this base directory in `config.json`.
 
 **Note:** Filenames are automatically sanitized (non-ASCII characters removed/transliterated, spaces replaced with hyphens) to ensure cross-platform compatibility.
 
@@ -69,12 +69,12 @@ python transcribe.py meeting.m4a
 python transcribe.py --no-summary interview.wav
 ```
 
-## Configuration (`transcribe_config.json`)
+## Configuration (`config.json`)
 
-The script looks for `transcribe_config.json` in the following locations, in order:
+The script looks for `config.json` in the following locations, in order:
 
-1.  The current directory (`./transcribe_config.json`)
-2.  The user's config directory (`~/.config/transcribe/transcribe_config.json` on Linux/macOS)
+1.  The current directory (`./config.json`)
+2.  The user's config directory (`~/.config/transcribe/config.json` on Linux/macOS)
 
 ```json
 {
@@ -90,5 +90,5 @@ The script looks for `transcribe_config.json` in the following locations, in ord
 
 To use the Google Gemini CLI instead of a local Ollama server for summarization:
 1.  Ensure the `gemini` command-line tool is installed and in your PATH.
-2.  Set `"summarize_model": "gemini"` in your `transcribe_config.json`.
+2.  Set `"summarize_model": "gemini"` in your `config.json`.
     *   The script will pipe the transcript to `gemini -p <SYSTEM_PROMPT>`.

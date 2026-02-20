@@ -29,7 +29,7 @@ pip install -r requirements.txt
 
 ## 3. Configuration
 
-Create a file named `transcribe_config.json` in this directory.
+Create a file named `config.json` in this directory.
 
 **Minimal Example (Using Ollama):**
 ```json

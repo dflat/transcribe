@@ -41,7 +41,7 @@ DEFAULT_CONFIG = {
     }
 }
 
-CONFIG_FILE_NAME = "transcribe_config.json"
+CONFIG_FILE_NAME = "config.json"
 
 # System Prompt for Summarization (Ported from outline.sh)
 SYSTEM_PROMPT = """You are an expert technical writer and analyst. Your task is to generate a comprehensive, structured Markdown outline based on the following transcript.
@@ -68,8 +68,8 @@ def load_config() -> Dict[str, Any]:
     """Load configuration from JSON file or return defaults.
     
     Checks in order:
-    1. Current working directory (transcribe_config.json)
-    2. User config directory (~/.config/transcribe/transcribe_config.json)
+    1. Current working directory (config.json)
+    2. User config directory (~/.config/transcribe/config.json)
     """
     config = DEFAULT_CONFIG.copy()
     

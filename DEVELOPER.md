@@ -40,7 +40,7 @@ The script is organized into three main classes, each responsible for a distinct
 
 ## Configuration
 
-Configuration is managed via `transcribe_config.json`. The `load_config()` function reads this file and overlays it on top of `DEFAULT_CONFIG`.
+Configuration is managed via `config.json`. The `load_config()` function reads this file and overlays it on top of `DEFAULT_CONFIG`.
 
 *   **`whisper_url`**: Endpoint for the Whisper server.
 *   **`ollama_url`**: Endpoint for the Ollama server.
