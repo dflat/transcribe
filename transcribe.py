@@ -345,7 +345,7 @@ def main():
         clean_filename = f"{clean_stem}{Path(original_filename).suffix}"
         
         slug_base = clean_stem
-        output_base_dir = Path(config.get("output_directory", "output/"))
+        output_base_dir = Path(config.get("output_directory", "output/")).expanduser()
         slug_dir = output_base_dir / slug_base
         
         if slug_dir.exists():
