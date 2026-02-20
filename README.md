@@ -37,9 +37,13 @@ python transcribe.py [URL | FILE]
 
 By default, all processed files (audio, transcript, and summary) are stored in a subdirectory of the `output/` folder, named after the input file (slugified). You can change this base directory in `transcribe_config.json`.
 
+**Note:** Filenames are automatically sanitized (non-ASCII characters removed/transliterated, spaces replaced with hyphens) to ensure cross-platform compatibility.
+
 ### Options
 
 *   `--no-summary`: Skip the summarization step (transcription only).
+*   `-x`, `--delete-audio`: Automatically delete the audio file from the workspace after processing is complete.
+*   `-v`, `--verbose`: Enable verbose logging and download progress.
 
 ### Examples
 

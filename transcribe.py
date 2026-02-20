@@ -275,6 +275,7 @@ def main():
         parser.add_argument("input", help="URL to download or path to local audio file.")
         parser.add_argument("--no-summary", action="store_true", help="Skip summary generation.")
         parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging and download progress.")
+        parser.add_argument("-x", "--delete-audio", action="store_true", help="Delete audio file after processing.")
         args = parser.parse_args()
 
         setup_logging(args.verbose)
@@ -320,8 +321,11 @@ def main():
             original_filename = audio_path.name
 
         # --- Step 2: Workspace Creation ---
-        # Create slug from filename (without extension)
-        slug_base = slugify(Path(original_filename).stem)
+        # Create slug from filename (without extension) - Sanitizes non-ASCII
+        clean_stem = slugify(Path(original_filename).stem)
+        clean_filename = f"{clean_stem}{Path(original_filename).suffix}"
+        
+        slug_base = clean_stem
         output_base_dir = Path(config.get("output_directory", "output/"))
         slug_dir = output_base_dir / slug_base
         
@@ -331,8 +335,8 @@ def main():
             slug_dir.mkdir(parents=True, exist_ok=True)
             logging.info(f"Created workspace: {slug_dir}")
 
-        # Move/Copy audio file to workspace
-        final_audio_path = slug_dir / original_filename
+        # Move/Copy audio file to workspace with sanitized name
+        final_audio_path = slug_dir / clean_filename
         
         # If downloaded, move it. If local, copy it (preserve original) or move? 
         # The shell script logic implied moving input file to workspace. 
@@ -370,11 +374,20 @@ def main():
             logging.info("Skipping summary generation.")
             notify("Transcription Complete", f"Transcribed {original_filename}")
 
+        # --- Step 5: Cleanup ---
+        if args.delete_audio:
+            if final_audio_path.exists():
+                logging.info(f"Deleting audio file: {final_audio_path.name}")
+                final_audio_path.unlink()
+
         print("\n" + "="*40)
         print("SUCCESS")
         print("="*40)
         print(f"Workspace: {slug_dir}")
-        print(f" - Audio:      {final_audio_path.name}")
+        if final_audio_path.exists():
+            print(f" - Audio:      {final_audio_path.name}")
+        else:
+            print(f" - Audio:      [DELETED]")
         print(f" - Transcript: {transcript_path.name}")
         if not args.no_summary and 'summary_path' in locals():
              print(f" - Summary:    {summary_path.name}")
